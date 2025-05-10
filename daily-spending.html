@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Today's Spending</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Blur the background */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('coin.jpg') no-repeat center center/cover;
+      filter: blur(10px);  /* Apply blur effect */
+      z-index: -1;  /* Ensure the blur stays behind content */
+    }
+
+    .spending-container {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2em;
+      border-radius: 10px;
+      color: white;
+      width: 80%;
+      max-width: 600px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .spending-details {
+      margin-top: 20px;
+    }
+
+    .spending-details p {
+      font-size: 1.2em;
+    }
+
+    .back-btn {
+      margin-top: 20px;
+      display: block;
+      text-align: center;
+      padding: 10px 20px;
+      background-color: #f22;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    /* Position the 'Back to Dashboard' button in the top-right corner */
+    .top-back-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background-color: #f22;
+      border: none;
+      color: white;
+      font-size: 1em;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .top-back-btn:hover {
+      background-color: #d00;
+    }
+  </style>
+</head>
+<body>
+  <button class="top-back-btn" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+  
+  <div class="spending-container">
+    <h2>Today's Spending</h2>
+    <div class="spending-details">
+      <p>Total Income Today: <span id="total-income">$0.00</span></p>
+      <p>Total Expense Today: <span id="total-expense">$0.00</span></p>
+      <p>Net Spending Today: <span id="net-spending">$0.00</span></p>
+    </div>
+
+  </div>
+
+  <script>
+    const totalIncomeElem = document.getElementById('total-income');
+    const totalExpenseElem = document.getElementById('total-expense');
+    const netSpendingElem = document.getElementById('net-spending');
+
+    // Get customerId from localStorage
+    const customerId = localStorage.getItem('customerId');
+    if (!customerId) {
+      totalIncomeElem.textContent = 'User not logged in';
+      totalExpenseElem.textContent = 'User not logged in';
+      netSpendingElem.textContent = 'User not logged in';
+    } else {
+      async function fetchTodayTotals() {
+        try {
+          const response = await fetch(`/api/transaction/today-totals/${customerId}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch today totals');
+          }
+          const totals = await response.json();
+          totalIncomeElem.textContent = '$' + totals.totalIncome.toFixed(2);
+          totalExpenseElem.textContent = '$' + totals.totalSpending.toFixed(2);
+          netSpendingElem.textContent = '$' + (totals.totalIncome - totals.totalSpending).toFixed(2);
+        } catch (error) {
+          totalIncomeElem.textContent = 'Error';
+          totalExpenseElem.textContent = 'Error';
+          netSpendingElem.textContent = 'Error';
+          console.error('Error fetching today totals:', error);
+        }
+      }
+      fetchTodayTotals();
+    }
+  </script>
+</body>
+</html>

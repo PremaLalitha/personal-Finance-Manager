@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monthly Comparison</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Blur the background */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('imageof coin.png') no-repeat center center/cover;
+      filter: blur(10px);  /* Apply blur effect */
+      z-index: -1;  /* Ensure the blur stays behind content */
+    }
+
+    .comparison-container {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2em;
+      border-radius: 10px;
+      color: white;
+      width: 80%;
+      max-width: 900px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .comparison-details {
+      margin-top: 20px;
+    }
+
+    .comparison-details p {
+      font-size: 1.2em;
+    }
+
+    .back-btn {
+      margin-top: 20px;
+      display: block;
+      text-align: center;
+      padding: 10px 20px;
+      background-color: #f22;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    /* Position the 'Back to Dashboard' button in the top-right corner */
+    .top-back-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      background-color: #f22;
+      border: none;
+      color: white;
+      font-size: 1em;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .top-back-btn:hover {
+      background-color: #d00;
+    }
+  </style>
+</head>
+<body>
+  <button class="top-back-btn" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+  
+  <div class="comparison-container">
+    <h2>Monthly Spending Comparison</h2>
+    <div class="comparison-details">
+      <p>This Month's Income: <span id="this-month-income">$0.00</span></p>
+      <p>This Month's Expense: <span id="this-month-expense">$0.00</span></p>
+      <p>Last Month's Income: <span id="last-month-income">$0.00</span></p>
+      <p>Last Month's Expense: <span id="last-month-expense">$0.00</span></p>
+      <p id="warning-message" style="color: yellow; font-weight: bold; margin-top: 20px;"></p>
+    </div>
+  </div>
+
+  <script>
+    const thisMonthIncomeElem = document.getElementById('this-month-income');
+    const thisMonthExpenseElem = document.getElementById('this-month-expense');
+    const lastMonthIncomeElem = document.getElementById('last-month-income');
+    const lastMonthExpenseElem = document.getElementById('last-month-expense');
+    const warningMessageElem = document.getElementById('warning-message');
+
+    // Placeholder customerId, replace with actual logic if available
+    const customerId = 1;
+
+    async function fetchMonthlyComparison() {
+      try {
+        const response = await fetch(`/api/transaction/monthly-comparison/${customerId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch monthly comparison');
+        }
+        const data = await response.json();
+
+        thisMonthIncomeElem.textContent = '$' + data.thisMonthIncome.toFixed(2);
+        thisMonthExpenseElem.textContent = '$' + data.thisMonthSpending.toFixed(2);
+        lastMonthIncomeElem.textContent = '$' + data.lastMonthIncome.toFixed(2);
+        lastMonthExpenseElem.textContent = '$' + data.lastMonthSpending.toFixed(2);
+        warningMessageElem.textContent = data.warningMessage || '';
+
+    let lastMonthIncome = 0;
+    let lastMonthExpense = 0;
+
+    transactions.forEach(transaction => {
+      const txDate = new Date(transaction.date);
+      const txMonth = txDate.getMonth();
+      const txYear = txDate.getFullYear();
+
+      if (txYear === currentYear && txMonth === currentMonth) {
+        if (transaction.type === 'debit') {
+          thisMonthSpending += transaction.amount;
+        }
+      } else if (txYear === lastMonthYear && txMonth === lastMonth) {
+        if (transaction.type === 'credit') {
+          lastMonthIncome += transaction.amount;
+        } else if (transaction.type === 'debit') {
+          lastMonthExpense += transaction.amount;
+        }
+      }
+    });
+
+    thisMonthSpendingElem.textContent = '$' + thisMonthSpending.toFixed(2);
+    lastMonthIncomeElem.textContent = '$' + lastMonthIncome.toFixed(2);
+    lastMonthExpenseElem.textContent = '$' + lastMonthExpense.toFixed(2);
+
+    // Show warning if account opened this month (no last month data)
+    if (lastMonthIncome === 0 && lastMonthExpense === 0) {
+      warningMessageElem.textContent = "Note: Your account was opened this month. Monthly comparison will be available after one month.";
+    } else {
+      warningMessageElem.textContent = "";
+    }
+
+  } catch (error) {
+    thisMonthSpendingElem.textContent = 'Error';
+    lastMonthIncomeElem.textContent = 'Error';
+    lastMonthExpenseElem.textContent = 'Error';
+    warningMessageElem.textContent = "";
+    console.error('Error fetching transactions:', error);
+  }
+}
+
+fetchMonthlyTransactions();

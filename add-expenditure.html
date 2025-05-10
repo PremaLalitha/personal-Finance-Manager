@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Expenditure</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      background: url('coin.jpg') no-repeat center center/cover;
+      position: relative;
+    }
+
+    /* Blurred background overlay */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: inherit;
+      filter: blur(8px);
+      z-index: 0;
+    }
+
+    .top-back-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: #f22;
+      color: white;
+      padding: 10px 15px;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 8px;
+      z-index: 10;
+      box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    }
+
+    .top-back-btn:hover {
+      background-color: #d00;
+    }
+
+    .form-container {
+      position: relative;
+      z-index: 1;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 2em;
+      border-radius: 15px;
+      color: white;
+      width: 400px;
+      margin: auto;
+      top: 50%;
+      transform: translateY(-50%);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+
+    .form-container h2 {
+      margin-bottom: 1.5em;
+    }
+
+    .form-container input,
+    .form-container select,
+    .form-container button {
+      width: 100%;
+      padding: 1em;
+      margin-bottom: 1em;
+      border-radius: 8px;
+      border: none;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    .form-container input,
+    .form-container select {
+      background-color: #f0f0f0;
+      color: #000;
+    }
+
+    .form-container button {
+      background-color: #f22;
+      color: white;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    .form-container button:hover {
+      background-color: #d00;
+    }
+
+    .error {
+      color: yellow;
+      font-size: 0.95em;
+    }
+
+    .success {
+      color: #90ee90;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Add New Expenditure</h2>
+    <form id="expenditure-form">
+      <input type="text" id="description" placeholder="Description" required />
+      <input type="number" id="amount" placeholder="Amount" required min="0.01" step="0.01" />
+      <select id="type" required>
+        <option value="" disabled selected>Select Type</option>
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+      <input type="date" id="date" />
+      <button type="submit">Submit</button>
+    </form>
+    <p class="error" id="error-message"></p>
+    <p class="success" id="success-message"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById('expenditure-form');
+    const descriptionInput = document.getElementById('description');
+    const amountInput = document.getElementById('amount');
+    const typeInput = document.getElementById('type');
+    const dateInput = document.getElementById('date');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+
+    // Set current date
+    dateInput.value = new Date().toISOString().split('T')[0];
+
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const description = descriptionInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+      const type = typeInput.value;
+      const date = dateInput.value;
+
+      errorMessage.textContent = '';
+      successMessage.textContent = '';
+
+      if (!description || isNaN(amount) || amount <= 0 || !type) {
+        errorMessage.textContent = 'Please enter valid description, amount, and type.';
+        return;
+      }
+
+      // Map frontend type to backend type
+      const backendType = type === 'expense' ? 'debit' : 'credit';
+
+      // Get customerId from localStorage
+      const customerId = localStorage.getItem('customerId');
+      if (!customerId) {
+        errorMessage.textContent = 'User not logged in.';
+        return;
+      }
+
+      const transaction = {
+        customerId: parseInt(customerId),
+        description: description,
+        amount: amount,
+        type: backendType,
+        date: date
+      };
+
+      try {
+        const response = await fetch('/api/transaction/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(transaction)
+        });
+
+        if (response.ok) {
+          // Update balance in localStorage
+          let balance = parseFloat(localStorage.getItem('balance')) || 0.00;
+          balance = backendType === 'debit' ? balance - amount : balance + amount;
+          localStorage.setItem('balance', balance.toFixed(2));
+
+          successMessage.textContent = 'Expenditure added successfully! Redirecting...';
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1500);
+        } else {
+          const errorData = await response.json();
+          errorMessage.textContent = errorData.message || 'Failed to add expenditure.';
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Error connecting to server.';
+      }
+    });
+  </script>
+</body>
+</html>
